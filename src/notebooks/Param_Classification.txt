@@ -1,0 +1,18 @@
+# Classifying the Parameters
+
+User level
+- Cloud savings per month (could vary, also has intrinsic cost... not paying? they are using your data)
+- Init. Hardware buyin (~35) (More than likely a constant)
+- Base line cost ---> cloud subscription(s) totals
+
+Simulation level
+
+Variable:
+- Miners 
+- Time (months or years)
+- Token Value
+- Rate of token value increase (or decrease !)
+- Power consumption (dependent on the config of the setup AND how many a person has)
+
+Simulation level, but is dependent on other inputs
+- Tokens acquired (monthly tokens / miners )

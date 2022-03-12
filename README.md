@@ -16,19 +16,27 @@ would experience.
 
 Some key parameters being utilized:
 
-- Cloud savings
-- Hardware buy in cost
-- Power consumption cost
-- Tokens earned per end user
+- Time (defaults to 1 year)
+- Cloud savings (Is derived from the amount not spent on the cloud storage solutions)
+- Hardware buy in cost (A one time cost associated with getting the mining device)
+- Power consumption cost (An additional cost, though not much, per month)
+- Tokens earned per end user (The reward earned by mining per user)
+  - Amount depends on the number of miners in the system
+  - Example: 50,000 miners a month and the reward is 200 tokens a month
 
 These will then influence the modeling the rewards (money earned) from
 mining the token over the course of a year.
+
+### Key Insights
+
+- We noticed on the default settings (after we had set miners to default to 1100) that the token rewards at the end of the year vs miners starts to cross after 1 year.
+  - This was different from the relatively low margin of tokens mined at 10,000 miners and could be a good indicator of when people would want to join the network.
 
 ## Development
 
 ### Requirements:
 
-- Python >= 3.8
+- Python >= 3.10
 - A virtual environment
   - Currently using [VirtualFish](https://virtualfish.readthedocs.io/en/latest/install.html)
 - Jupyter Labs or Jupyter notebook
@@ -61,6 +69,18 @@ just remember to stay consistent otherwise errors may arise.
 Once we have the script files, those can be executed with the python run time without
 the need to load in that extra kernel (woo!).
 
+#### Running the Python Simulation
+
+Assuming Python 3.10, this is how it should work as our simulation on the server
+is requested from dashboard in similar fashion (with imports the same style).
+
+```
+python3 ./src/simulations/main.py
+```
+
+If you use VScode (or similar) it should be a very similar execution step once you
+are able to locate `main.py`.
+
 ### Progress:
 
 - [x] Setup the initial system parameters
@@ -68,10 +88,9 @@ the need to load in that extra kernel (woo!).
 - [x] Allow the graph to adjust for price up to $5
 - [x] Show the rewards for those who mined over the course of year as the token value increases.
 - [x] Show the break even point (explicitly)
-- [ ] Build the models in Python scripts (Working on this)
-- [ ] Integrate with dashboard service
+- [x] Build the models in Python scripts
+- [x] Integrate with dashboard service
 - [x] Build out the UI of the dashboard
-- [ ] Deliver link
 
 ### Issues / Bugs:
 

@@ -71,15 +71,15 @@ the need to load in that extra kernel (woo!).
 
 #### Running the Python Simulation
 
-Assuming Python 3.10, this is how it should work as our simulation on the server
-is requested from dashboard in similar fashion (with imports the same style).
+This was developed with Python 3.8 as the version so the way to run it on the CLI
+should follow:
 
 ```
-python3 ./src/simulations/main.py
+python3 src/simulations/__init__.py
 ```
 
 If you use VScode (or similar) it should be a very similar execution step once you
-are able to locate `main.py`.
+are able to locate `main.py` or the `__init__.py` module.
 
 ### Progress:
 

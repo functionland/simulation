@@ -7,9 +7,13 @@
 ## Date: March 8th, 2022
 ###
 
+# NOTE:
 # Python imports might cause an issue, but our server uses this
 # for the data you see on the dashboard app.
-from .rewards import gen_results
+# from .rewards import gen_results
+
+# NOTE: python 3.8+ on the command line
+import rewards
 
 
 def test_system_params() -> dict:
@@ -57,7 +61,14 @@ def simulate(configs: dict = test_system_params()):
     # NOTE: Should more simulations be added in the future, we can simply call their
     #       'simulate' functions here and all the data would be passed back!
 
-    config = configs | test_system_params()
+    config = configs or test_system_params()
 
-    results = gen_results(config)
+    print("---- Fula Network Simulation ----")
+
+    # NOTE: Python 3.8+ on the command line
+    results = rewards.gen_results(config)
+    # NOTE: Python 3.10 and remote request
+    # results = gen_results(config)
+
+    print("---- End of Simulation ----")
     return results

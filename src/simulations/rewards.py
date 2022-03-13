@@ -78,13 +78,12 @@ def display_stats(monthly_reward, monthly_miner_dist, token_value):
     for i in range(len(monthly_reward)):
         tokens = monthly_reward[i]
         miners = monthly_miner_dist[i]
+        curr_val = token_value[i]
 
         print("[Simulation] Current Month: " + str(curr_month))
         print("\t[Simulation] Current Miners: " + str(miners))
         print("\t[Simulation] Current Monthly Reward: " + str(tokens) + " tokens")
-        print(
-            "\t[Simulation] Current reward value in USD: " + str(tokens * token_value)
-        )
+        print("\t[Simulation] Current reward value in USD: " + str(tokens * curr_val))
         curr_month += 1
 
 
@@ -133,15 +132,17 @@ def gen_results(configs: dict = {}):
     cloud_cost_now_savings = configs["user_config"]["avg_monthly_storage_cost"]
 
     # A constant array that is used on the dashboard
-    months = [i for i in range(1, configs["time_in_months"])]
+    months = [i for i in range(1, configs["global_params"]["time_in_months"])]
 
+    # Calcuate the average tokens mined per day for a year
+    # total tokens for the year divided by 365
     avg_tokens_per_day = round(monthly_balance[-1] / 365)
 
     # the final dictionary with all of our calculations
     to_sender = {
         "Miners": miners,
         "Tokens": tokens,
-        "Time": configs["time_in_months"],
+        "Time": configs["global_params"]["time_in_months"],
         "Avg_Active_Miners": calc_avg_active_miners(monthly_miner_dist),
         "rate_of_change": configs["miner_config"]["rate_of_change"],
         "Avg_Miner_stats": {
@@ -158,5 +159,11 @@ def gen_results(configs: dict = {}):
         "monthly_balance": monthly_balance,
         "token_value_array": token_value,
     }
+
+    # Display results for the CLI
+    # Not necessary for a remote call
+    print("--- Start Miner Rewards ----")
+    display_stats(monthly_balance, monthly_miner_dist, token_value)
+    print("--- End Miner Rewards ----")
 
     return to_sender

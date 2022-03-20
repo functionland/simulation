@@ -4,30 +4,75 @@
 ## Authors: Nicholas O'Kelley, Jake Cassani
 ## Organization: Longtail Financial
 ## Date: March 8th, 2022
+## Last Modified: March 19, 2022
 ###
+
+# NOTE:
+# Python imports might cause an issue, but our server uses this
+# for the data you see on the dashboard app.
+# from .Box import Box
+
+# NOTE: python 3.8+ on the command line
+# import Box
+from Box import Box
+
+# Standard imports
+import uuid
+import random
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import plotly.express as px
+
+
+def calc_storage_percentage(storage, total_storage):
+    """
+    Calcualates the percentage for the amount of storage provided to the network.
+
+    Params:
+        - storage: Amount provided to the network
+        - total_storage: total storage in the network
+
+    Returns:
+        The percentage of contribution
+
+    """
+    return storage / total_storage
+
+
+def token_rewards(reward_percent: float, monthly_tokens: float) -> float:
+    """
+    Calculates the monthly reward based on the current storage provided and the
+    tokens allocated for the month.
+
+    Params:
+        - reward_percent : percentage of network contribution
+        - monthly_tokens : tokens allocated for the monthly rewards
+
+    Returns:
+        The monthly reward
+
+    """
+    return monthly_tokens * reward_percent
 
 
 def monthly_change(
-    var,
-    percent_change,
-    upper_bound=12,
+    miners: list,
+    percent_change: float,
 ) -> list:
     """
-    Simulates either 12 months or a specified monthly percent change (delta)
-
-    Params:
-        var : the variable that will change
-        percent_change : the percent increase or decrease
-        upper_bound : the amount of iterations (months) that should pass
-
-    Returns:
-        A list with each months values
+    Helper function that adds new miners to the pool
     """
-    payload = []
-    payload.append(var)
-    for i in range(1, upper_bound):
-        payload.append(round(payload[i - 1] + (payload[i - 1] * percent_change)))
-    return payload
+
+    curr_miners = len(miners)
+    amount_to_increase = round(curr_miners * percent_change)
+
+    for i in range(amount_to_increase):
+        storage = random.random() * 10
+        mac_address = uuid.uuid4()
+        miners.append(Box(mac_address, storage))
+
+    return miners
 
 
 def calc_avg_active_miners(monthly_miner_dist: list) -> float:
@@ -48,27 +93,6 @@ def calc_avg_active_miners(monthly_miner_dist: list) -> float:
     return round(avg / len(monthly_miner_dist), 1)
 
 
-def gen_reward_per_month(miner_dist, monthly_token_amount):
-    """
-    A helper function that will calculate the token reward each miner will recieve
-    for each entry in the miner distribution. This is typically a one year calculation
-    based on our work, but it should handle future year expansion
-
-    Params:
-      - miner_dist: dictionary of miners each month, for a given time frame
-      - monthly_token_amount: the amount of tokens to be mined each month
-
-    Returns:
-      A list with the rewards per month
-
-    """
-    reward_per_miner_per_month = []
-    for miners in miner_dist:
-        reward_per_miner_per_month.append(monthly_token_amount / miners)
-
-    return reward_per_miner_per_month
-
-
 def display_stats(monthly_reward, monthly_miner_dist, token_value):
     """
     A helper function that can display a few stats on the terminal
@@ -87,14 +111,108 @@ def display_stats(monthly_reward, monthly_miner_dist, token_value):
         curr_month += 1
 
 
+def gen_miners(init_miners, start=0) -> list:
+    """
+    Generates the initial batch of miners
+
+    Returns:
+        The updated miner array
+    """
+
+    miners = []
+
+    for _ in range(start, init_miners):
+        storage = random.randrange(0, 11)
+        miners.append(Box(uuid.uuid4(), storage))
+
+    return miners
+
+
+def update_monthly_rewards(miners, monthly_tokens, total_storage):
+    """
+    Helper function that updates the rewards of the miners for the month
+    and calculates the average tokens per day.
+
+    Params:
+        miners: list of the miners in the system
+        monthly_tokens: pool of tokens to divide
+        total_storage: amount of total storage provided (basis)
+
+    Returns:
+        None
+    """
+    for miner in miners:
+        miner.monthly_rewards.append(
+            token_rewards(
+                calc_storage_percentage(miner.storage, total_storage),
+                monthly_tokens,
+            )
+        )
+
+        miner.daily_rewards.append(calc_daily_rewards(miner))
+
+
+def update_network_contribution(miners, total_storage):
+    """
+    Helper function that updates the relative amount of storage provided to the network
+
+    Params:
+        miners: list of the miners in the system
+        total_storage: amount of total storage provided (basis)
+
+    Returns:
+        None
+    """
+    for miner in miners:
+        miner.storage_percent = calc_storage_percentage(miner.storage, total_storage)
+
+
+def calc_network_storage(miners):
+    """
+    Calculates the amount of storage in the Fula Network
+    """
+    storage = 0
+
+    for miner in miners:
+        storage = storage + miner.storage
+
+    return storage
+
+
+def calc_daily_rewards(miner):
+    # NOTE: A month is consider a 30 day period
+    return miner.monthly_rewards[-1] / 30
+
+
+def create_df(miners):
+    """
+    Helper function that is mainly utilized to create the Storage breakdown
+    dataframe.
+
+    Used on the dashboard mainly.
+    """
+    storage = []
+    mac = []
+
+    for miner in miners:
+        mac.append(miner.mac_address)
+        storage.append(miner.storage)
+
+    data = zip(mac, storage)
+    df = pd.DataFrame(data, columns=["MacAddress", "Storage"])
+    val = df["Storage"].value_counts()
+    counts = []
+    for i in range(0, 11):
+        counts.append(val[i])
+    index = [i for i in range(0, 11)]
+
+    df = pd.DataFrame(zip(index, counts), columns=["Amnt", "Count"])
+
+    return df
+
+
 def gen_results(configs: dict = {}):
     """
-    This is the "meat and potatos" of the simulation. Given a few parameters based
-    on the config seen in `main.py`, this function will
-    handle calculating the various stats about how much a person would see in
-    rewards and offseting this with any costs that come up from joining the
-    system.
-
     Params:
         - configs: a dictionary of simulation configs
 
@@ -102,68 +220,161 @@ def gen_results(configs: dict = {}):
         A dictionary with the calculated information
     """
 
-    miners = configs["miner_config"]["miner_count"]
-    tokens = configs["miner_config"]["monthly_token_amount"]
+    init_miners = configs["miner_config"]["miner_count"]
+    monthly_tokens = configs["miner_config"]["monthly_token_amount"]
+    init_token_value = configs["global_params"]["token_value"]
+    rate_of_change = configs["miner_config"]["rate_of_change"]
+
+    # month 1 of miners
+    miners = gen_miners(init_miners, start=0)
+    total_storage = calc_network_storage(miners)
+
+    # An array to track the amount of miners per month (good chart)
+    monthly_miner_snapshot = [len(miners)]
+
+    # An array to track amount of network storage per month
+    monthly_storage_snapshot = []
+
+    for _ in range(1, 13):
+
+        # Update the snapshot
+        monthly_storage_snapshot.append(total_storage)
+
+        # calc reward
+        update_monthly_rewards(miners, monthly_tokens, total_storage)
+
+        # increase the miner pool
+        miners = monthly_change(miners, rate_of_change)
+
+        # Sum the current storage
+        total_storage = calc_network_storage(miners)
+
+        # Readjust the amount of contribution
+        update_network_contribution(miners, total_storage)
+        monthly_miner_snapshot.append(len(miners))
+
+    # placeholder box
+    miner = Box(uuid.uuid4(), random.randrange(0, 11))
+    # This can be reduce some how
+    for m in miners:
+        if m.storage == configs["miner_config"]["storage_provided"]:
+            miner = m
+            break
+
+    # NOTE: our selected miner / box represents the uers viewing the app
+    avg_tokens_per_day = sum(miner.daily_rewards) / 12
+    yearly_mined_tokens = sum(miner.monthly_rewards)
+    EOY_value = yearly_mined_tokens * configs["global_params"]["token_value"]
+
+    # NOTE: Calc the users costs / savings
+    power_cost = configs["user_config"]["avg_power_consumption"] * 12
+    cloud_savings = configs["user_config"]["avg_monthly_storage_cost"] * 12
+
+    time_array = [i for i in range(1, 13)]
+
     current_token_value = configs["global_params"]["token_value"]
+    token_value_array = [current_token_value + (i * 0.01) for i in range(0, 12)]
 
-    monthly_miner_dist = monthly_change(
-        miners, configs["miner_config"]["rate_of_change"]
-    )
+    miner_plot = {
+        "data": [
+            {
+                "x": time_array,
+                "y": monthly_miner_snapshot,
+                "name": "Miners",
+                "type": "line",
+            }
+        ]
+    }
 
-    # NOTE: If they want to change rate of price increase, we can modify the 0.01
-    # NOTE: and then add another slider on the dashboard
-    token_value = [current_token_value + (i * 0.01) for i in range(0, 12)]
+    token_value = token_value_array
+    usd_reward_balance = []
+    monthly_sub_total = []
+    sub_val = []
+    tokens = 0
 
-    # A list of each months mined tokens
-    monthly_reward = gen_reward_per_month(monthly_miner_dist, tokens)
+    for i in range(len(miner.monthly_rewards)):
+        amnt = miner.monthly_rewards[i]
 
-    monthly_balance = [monthly_reward[0]]
+        if len(monthly_sub_total) == 0:
+            monthly_sub_total.append(amnt)
+            tokens = amnt
+        else:
+            monthly_sub_total.append(monthly_sub_total[i - 1] + amnt)
+            tokens = monthly_sub_total[-1]
 
-    for i in range(1, len(monthly_reward)):
-        monthly_balance.append(monthly_balance[i - 1] + monthly_reward[i])
+        value = token_value[i]
+        usd_reward_balance.append(float(amnt) * value)
+        sub_val.append(float(tokens) * current_token_value)
 
-    # The total years cost of power (it's a debt that has to be accounted for)
-    yearly_power_cost = configs["user_config"]["avg_power_consumption_cost"] * 12
+    reward_in_usd_plot = {
+        "data": [{"x": time_array, "y": usd_reward_balance, "type": "line"}]
+    }
 
-    # Given the current_token_value, what are the tokens worth
-    EOY_value = round(sum(monthly_reward) * current_token_value, 2)
+    token_accum_plot = {
+        "data": [
+            {
+                "x": time_array,
+                "y": miner.monthly_rewards,
+                "type": "line",
+                "name": "Mined Rewards",
+            },
+            {
+                "x": time_array,
+                "y": monthly_sub_total,
+                "type": "line",
+                "name": "Accumulated Tokens",
+            },
+        ]
+    }
 
-    # This debt is now a savings that can help offset power
-    cloud_cost_now_savings = configs["user_config"]["avg_monthly_storage_cost"]
+    network_plot = {
+        "data": [
+            {
+                "x": time_array,
+                "y": monthly_storage_snapshot,
+                "type": "line",
+                "labels": {"x": " Months", "y": "Monthly Network Storage"},
+            }
+        ]
+    }
 
-    # A constant array that is used on the dashboard
-    months = [i for i in range(1, configs["global_params"]["time_in_months"])]
+    usd_val_tokens_per_month = {
+        "data": [{"x": monthly_sub_total, "y": sub_val, "type": "line"}]
+    }
 
-    # Calcuate the average tokens mined per day for a year
-    # total tokens for the year divided by 365
-    avg_tokens_per_day = round(monthly_balance[-1] / 365)
+    sub_val = [
+        monthly_sub_total[i] * token_value[i] for i in range(0, len(token_value))
+    ]
+
+    usd_val_inc_1_cent = {
+        "data": [{"x": monthly_sub_total, "y": sub_val, "type": "line"}]
+    }
 
     # the final dictionary with all of our calculations
     to_sender = {
-        "Miners": miners,
-        "Tokens": tokens,
         "Time": configs["global_params"]["time_in_months"],
-        "Avg_Active_Miners": calc_avg_active_miners(monthly_miner_dist),
+        "Miners": init_miners,
+        "Avg_Active_Miners": calc_avg_active_miners(monthly_miner_snapshot),
+        "Tokens": monthly_tokens,
+        "token_value": current_token_value,
         "rate_of_change": configs["miner_config"]["rate_of_change"],
         "Avg_Miner_stats": {
+            "power_cost": power_cost,
+            "cloud_storage_savings": cloud_savings,
             "avg_tokens_per_day": avg_tokens_per_day,
-            "yearly_mined_tokens": sum(monthly_reward),
+            "yearly_mined_tokens": yearly_mined_tokens,
             "end_of_year_value": EOY_value,
-            "power_cost": yearly_power_cost,
-            "cloud_storage_savings": cloud_cost_now_savings,
-            "net_profit": ((EOY_value - yearly_power_cost) + cloud_cost_now_savings),
+            "net_profit": ((EOY_value - power_cost) + cloud_savings),
         },
-        "monthly_miner_dist": monthly_miner_dist,
-        "monthly_rewards_per_miner": monthly_reward,
-        "time_array": months,
-        "monthly_balance": monthly_balance,
-        "token_value_array": token_value,
+        "plots": {
+            "token_accum_plot": token_accum_plot,
+            "network_storage_plot": network_plot,
+            "reward_in_usd_plot": reward_in_usd_plot,
+            "miner_plot": miner_plot,
+            "usd_val_tokens_per_month": usd_val_tokens_per_month,
+            "increment_token": usd_val_inc_1_cent,
+            "pie_df": create_df(miners).to_json(),
+        },
     }
-
-    # Display results for the CLI
-    # Not necessary for a remote call
-    print("--- Start Miner Rewards ----")
-    display_stats(monthly_balance, monthly_miner_dist, token_value)
-    print("--- End Miner Rewards ----")
 
     return to_sender

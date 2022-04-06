@@ -5,7 +5,7 @@
 ## Authors: Nicholas O'Kelley, Jake Cassani
 ## Organization: Longtail Financial
 ## Date: March 8th, 2022
-## Last Modified: March 26, 2022
+## Last Modified: April 2, 2022
 ###
 
 import json
@@ -33,16 +33,16 @@ def test_system_params() -> dict:
     test_config = {
         "global_params": {
             "time_in_months": 12,
-            "token_value": 0.04,
+            "token_value": 0.06,
         },
         "user_config": {
-            "avg_monthly_storage_cost": 50,
+            "avg_monthly_storage_cost": 30,
             "avg_power_consumption": 5,
         },
-        "miner_config": {
-            "rate_of_change": 0.05,
-            "miner_count": 23000,
-            "storage_provided": 5,
+        "box_config": {
+            "rate_of_change": 0.1,
+            "storage_cap": 1200,
+            "storage_provided": 1.12,
             "monthly_token_amount": 10e6,
         },
     }
@@ -83,8 +83,7 @@ def simulate(configs: dict = test_system_params()):
 
     # display_stats(results)
     display_stats(results["tables"]["network_table"])
-    display_stats(results["tables"]["miner_table"])
-    # display_stats(results["tables"]["network_storage_table"])
+    display_stats(results["tables"]["storage_table"])
 
     print("---- End of Simulation ----")
 

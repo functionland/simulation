@@ -13,8 +13,7 @@
 # from .Box import Box
 
 # NOTE: python 3.8+ on the command line
-# import Box
-from Box import Box
+import Box
 
 # Standard imports
 import uuid
@@ -26,126 +25,75 @@ import pandas as pd
 STORAGE_BOUND = 10.001
 
 
-def calc_storage_percentage(storage, total_storage):
+def gen_boxes(total_storage=0.0, boxes=[], storage_user=-1.0) -> list:
     """
-    Calcualates the percentage for the amount of storage provided to the network.
+    Generates boxes
 
     Params:
-        - storage: Amount provided to the network
-        - total_storage: total storage in the network
+        spawn: the cap of storage
+        boxes: an optional list to update
 
     Returns:
-        The percentage of contribution
-
+        The updated array
     """
-    return storage / total_storage
+
+    remaining_storage = total_storage - storage_user
+    allocated = 0
+    # print("Remaining Storage: " + str(remaining_storage))
+
+    if storage_user != -1.0:
+        # Ensure one miner represents the dashboard user
+        boxes.append(Box.Box(str(uuid.uuid4()), storage_user))
+
+    if storage_user == 0:
+        # Prevent issues with zero division
+        boxes.append(Box.Box(str(uuid.uuid4()), 1))
+        remaining_storage = remaining_storage - 1
+
+    while remaining_storage > 0.0:
+        if remaining_storage < 1.0:
+            allocated = remaining_storage
+            boxes.append(Box.Box(uuid.uuid4(), allocated))
+        elif remaining_storage < 10.0:
+            allocated = random.uniform(0.0, remaining_storage)
+            boxes.append(Box.Box(uuid.uuid4(), allocated))
+        else:
+            allocated = random.uniform(0.0, 10.0)
+            boxes.append(Box.Box(uuid.uuid4(), allocated))
+
+        remaining_storage = remaining_storage - allocated
+
+    return boxes
 
 
-def token_rewards(reward_percent: float, monthly_tokens: float) -> float:
+def calc_network_storage(boxes: list) -> float:
     """
-    Calculates the monthly reward based on the current storage provided and the
-    tokens allocated for the month.
-
+    Helper function to calculate the amount of storage in the Fula Network
     Params:
-        - reward_percent : percentage of network contribution
-        - monthly_tokens : tokens allocated for the monthly rewards
-
+        boxes: current list of boxes
     Returns:
-        The monthly reward
-
+        The summed amount of storage provided by all the boxes.
     """
-    return monthly_tokens * reward_percent
+    storage = 0
+
+    for b in boxes:
+        storage = storage + b.storage
+
+    return storage
 
 
-def monthly_change(
-    miners: list,
-    percent_change: float,
-) -> list:
+def update_monthly_rewards(boxes, monthly_tokens, total_storage):
     """
-    Helper function that adds new miners to the pool
-
-    Params:
-        miners: current list of miners
-        percent_change: amount to increase the amount of miners in the system
-
-    Returns:
-        The updated list of miners in the simulation
-    """
-
-    curr_miners = len(miners)
-    amount_to_increase = round(curr_miners * percent_change)
-
-    for _ in range(amount_to_increase):
-        storage = round(random.uniform(0, STORAGE_BOUND), 2)
-        mac_address = uuid.uuid4()
-        miners.append(Box(str(mac_address), storage))
-
-    return miners
-
-
-def calc_avg_active_miners(monthly_miner_dist: list) -> float:
-    """
-    Calculates the average active miners for the year
-
-    Params:
-        monthly_miner_dist: a list of miners each month
-
-    Returns:
-        A float value representing the average
-    """
-    avg = 0
-
-    for i in monthly_miner_dist:
-        avg += i
-
-    return round(avg / len(monthly_miner_dist), 1)
-
-
-def gen_miners(spawn=0, start=0, boxes=[], storage=None) -> list:
-    """
-    Generates the initial batch of miners
-
-    Params:
-        spawn: the number of miners to spawn
-        miners: an optional list to update
-
-    Returns:
-        The updated miner array
-    """
-
-    miners = []
-
-    # Ensure one miner represents the dashboard user
-    if storage is not None:
-        print("Added custom miner")
-        miners.append(Box(str(uuid.uuid4()), storage))
-
-    # We subtract one from our upper bound to account for previous step
-    for i in range(start, spawn - 1):
-        if i % 200 == 0:
-            print("Spawned " + str(i) + " miners...")
-
-        storage = round(random.uniform(0, STORAGE_BOUND), 2)
-        miners.append(Box(str(uuid.uuid4()), storage))
-
-    print("Created a total of " + str(len(miners)) + " miners.")
-    return miners
-
-
-def update_monthly_rewards(miners, monthly_tokens, total_storage):
-    """
-    Helper function that updates the rewards of the miners for the month
+    Helper function that updates the rewards of the boxes for the month
     and calculates the average tokens per day.
-
     Params:
-        miners: list of the miners in the system
+        boxes: list of the boxes in the system
         monthly_tokens: pool of tokens to divide
         total_storage: amount of total storage provided (basis)
-
     Returns:
         None
     """
-    for miner in miners:
+    for miner in boxes:
         miner.monthly_rewards.append(
             token_rewards(
                 calc_storage_percentage(miner.storage, total_storage),
@@ -156,85 +104,74 @@ def update_monthly_rewards(miners, monthly_tokens, total_storage):
         miner.daily_rewards.append(calc_daily_rewards(miner))
 
 
-def update_network_contribution(miners, total_storage):
+def calc_storage_percentage(storage, total_storage):
     """
-    Helper function that updates the relative amount of storage provided to the network
-
+    Calcualates the percentage for the amount of storage provided to the network.
     Params:
-        miners: list of the miners in the system
-        total_storage: amount of total storage provided (basis)
-
+        - storage: Amount provided to the network
+        - total_storage: total storage in the network
     Returns:
-        None
+        The percentage of contribution
     """
-    for miner in miners:
-        miner.storage_percent = calc_storage_percentage(miner.storage, total_storage)
+    return storage / total_storage
 
 
-def calc_network_storage(miners):
+def token_rewards(reward_percent: float, monthly_tokens: float) -> float:
     """
-    Helper function to calculate the amount of storage in the Fula Network
-
+    Calculates the monthly reward based on the current storage provided and the
+    tokens allocated for the month.
     Params:
-        miners: current list of miners
-
+        - reward_percent : percentage of network contribution
+        - monthly_tokens : tokens allocated for the monthly rewards
     Returns:
-        The summed amount of storage provided by all the miners.
+        The monthly reward
     """
-    storage = 0
-
-    for miner in miners:
-        storage = storage + miner.storage
-
-    return storage
+    return monthly_tokens * reward_percent
 
 
 def calc_daily_rewards(miner):
     """
     Helper function to calculate the daily rewards for a given 30 day period.
-
     Params:
-        miners: current list of miners
-
+        boxes: current list of boxes
     Returns:
         The Daily amount of mined rewards
-
     """
 
     # NOTE: A month is consider a 30 day period
     return miner.monthly_rewards[-1] / 30
 
 
-def create_network_table(miners):
+def update_network_contribution(boxes, total_storage):
     """
-    Helper function that is mainly utilized to create the Storage breakdown
-    dataframe.
-
-    Used on the dashboard mainly.
-
+    Helper function that updates the relative amount of storage provided to the network
     Params:
-        miners: current list of miners
-
+        boxes: list of the boxes in the system
+        total_storage: amount of total storage provided (basis)
     Returns:
-        A dataframe with the counts for the amount of miners providing
-        zero through ten TB of storage to the network.
+        None
+    """
+    for miner in boxes:
+        miner.storage_percent = calc_storage_percentage(miner.storage, total_storage)
+
+
+def monthly_change(
+    current_provided_storage,
+    boxes: list,
+    percent_change: float,
+) -> list:
+    """
+    Helper function that adds new boxes to the pool
+    Params:
+        current_provided_storage: amount of stroage currently provided
+        boxes: current list of boxes
+        percent_change: amount to increase the amount of boxes in the system
+    Returns:
+        The updated list of boxes in the simulation
     """
 
-    storage = []
-    mac = []
-
-    for miner in miners:
-        mac.append(miner.mac_address)
-        storage.append(miner.storage)
-
-    df = pd.DataFrame(zip(mac, storage), columns=["MacAddress", "Storage"])
-    sorted_df = df.sort_values(by="Storage")
-    # print(sorted_df)
-
-    if sorted_df is not None:
-        return sorted_df.to_dict()
-    else:
-        return df
+    amount_to_increase = round(current_provided_storage * percent_change)
+    return gen_boxes(total_storage=amount_to_increase, boxes=boxes)
 
 
 def gen_to_sender(
@@ -246,16 +183,15 @@ def gen_to_sender(
     """
     A helper function that processes the data from the simulation and then returns
     a dictionary containing useful charts and data.
-
     Params:
         miners: a list of the miners in the system
         configs: the simulation configs passed in originally
         monthly_miner_snapshot: list of the amount of miners per month
         monthly_storage_snapshot: list of the storage in the network per month
-
     Returns:
         A dictionary of useful data
     """
+
     # Our simulation runner miner.
     miner = miners[0]
 
@@ -286,7 +222,6 @@ def gen_to_sender(
         ]
     }
 
-    usd_reward_balance = []
     monthly_sub_total = []
     sub_val = []
     tokens = 0
@@ -301,7 +236,6 @@ def gen_to_sender(
             monthly_sub_total.append(monthly_sub_total[i - 1] + amnt)
             tokens = monthly_sub_total[-1]
 
-        usd_reward_balance.append(float(amnt) * token_value_array[i])
         sub_val.append(float(tokens) * current_token_value)
 
     # A plot that shows as miners increase, tokens rewarded per miner (based
@@ -335,56 +269,35 @@ def gen_to_sender(
         ]
     }
 
-    # Char to show the value of the tokens for the year if price is constant
-    usd_val_tokens_per_month = {
-        "data": [{"x": monthly_sub_total, "y": sub_val, "type": "line"}]
-    }
-
-    # Array of token values for the accumulated tokens
-    sub_val = [
-        monthly_sub_total[i] * token_value_array[i]
-        for i in range(0, len(token_value_array))
-    ]
-
-    # Chart to show each months Accumulated tokens value
-    usd_val_inc_1_cent = {
-        "data": [{"x": monthly_sub_total, "y": sub_val, "type": "line"}]
-    }
-
     network_table = {
-        "Start of Year Storage": round(monthly_storage_snapshot[0], 2),
-        "End of Year Storage": round(monthly_storage_snapshot[-1], 2),
-        "Initial Token Value": configs["global_params"]["token_value"],
-        "End of Year Value": current_token_value,
+        "Start of Year Storage (TB)": round(monthly_storage_snapshot[0], 2),
+        "End of Year Storage (TB)": round(monthly_storage_snapshot[-1], 2),
+        "Monthly % Change in Storage": configs["box_config"]["rate_of_change"],
+        "Token Value (USD)": configs["global_params"]["token_value"],
     }
 
-    miner_table = {
-        "Start of Year Miners": configs["miner_config"]["miner_count"],
-        "End of Year Active Miners": calc_avg_active_miners(monthly_miner_snapshot),
-        "Monthly % Change in miners": configs["miner_config"]["rate_of_change"],
-        "Avg Daily Token Reward": round(avg_tokens_per_day, 3),
+    storage_table = {
+        "Mined Token Value (USD)": round(EOY_value, 2),
+        "User Cloud Storage Savings (USD)": cloud_savings,
+        "Electricity Cost (USD)": 12
+        * float(configs["user_config"]["avg_power_consumption"]),
+        "Net Profit (USD)": round(((EOY_value - power_cost) + cloud_savings), 2),
         "Yearly Token Reward": round(yearly_mined_tokens, 3),
-        "Mined token USD Value": round(EOY_value, 2),
-        "User Cloud Storage Savings": cloud_savings,
-        "Net Profit": round(((EOY_value - power_cost) + cloud_savings), 2),
+        "Avg Daily Token Reward": round(avg_tokens_per_day, 3),
     }
 
     # the final dictionary with all of our calculations
-    to_sender = {
+    return {
         "tables": {
             "network_table": network_table,
-            "miner_table": miner_table,
-            "network_storage_table": create_network_table(miners),
+            "storage_table": storage_table,
         },
         "plots": {
             "token_accum_plot": token_accum_plot,
             "network_storage_plot": network_plot,
             "miner_plot": miner_plot,
-            "usd_val_tokens_per_month": usd_val_tokens_per_month,
-            "increment_token": usd_val_inc_1_cent,
         },
     }
-    return to_sender
 
 
 def gen_results(configs: dict):
@@ -397,49 +310,45 @@ def gen_results(configs: dict):
     """
 
     # Some constants to make references easier later
-    init_miners = configs["miner_config"]["miner_count"]
-    monthly_tokens = configs["miner_config"]["monthly_token_amount"]
-    rate_of_change = configs["miner_config"]["rate_of_change"]
-    storage_provided = configs["miner_config"]["storage_provided"]
+    storage_cap = configs["box_config"]["storage_cap"]
+    monthly_tokens = configs["box_config"]["monthly_token_amount"]
+    rate_of_change = configs["box_config"]["rate_of_change"]
+    storage_provided = configs["box_config"]["storage_provided"]
+    time = configs["global_params"]["time_in_months"]
 
-    # Create the initial pool of miners/ boxes
-    miners = gen_miners(spawn=init_miners, start=0, storage=storage_provided)
+    # Create the initial pool of boxes
+    boxes = gen_boxes(storage_cap, storage_user=storage_provided)
+    total_storage = calc_network_storage(boxes)
+    # print("Starting storage: " + str(round(total_storage, 2)))
 
-    # A variable to help track the current total storage provided
-    total_storage = calc_network_storage(miners)
+    amount_of_boxes = len(boxes)
 
     # An array to track amount of network storage per month
     monthly_storage_snapshot = []
 
-    # An array to track the amount of miners per month (good chart)
-    monthly_miner_snapshot = [len(miners)]
+    monthly_storage_snapshot.append(total_storage)
+    # An array to track the amount of boxes per month (good chart)
+    monthly_miner_snapshot = [amount_of_boxes]
 
-    for month in range(1, 13):
+    for month in range(1, time + 1):
 
-        print("\n ----- Month " + str(month) + " -----")
-        # Update the snapshot
+        # print("----- Month " + str(month) + " -----")
+        update_monthly_rewards(boxes, monthly_tokens, total_storage)
+
+        # print("\tActive Network Participants: " + str(len(boxes)))
+        boxes = monthly_change(total_storage, boxes, rate_of_change)
+
+        total_storage = calc_network_storage(boxes)
+        # print("\tCurrent Storage: " + str(round(total_storage, 2)))
+
+        update_network_contribution(boxes, total_storage)
         monthly_storage_snapshot.append(total_storage)
-        # calc reward
-        update_monthly_rewards(miners, monthly_tokens, total_storage)
+        monthly_miner_snapshot.append(len(boxes))
 
-        # increase the miner pool
-        print("\tActive Network Participants: " + str(len(miners)))
-        miners = monthly_change(miners, rate_of_change)
-
-        # Update the sum of current storage
-        total_storage = calc_network_storage(miners)
-        print("\tCurrent Storage: " + str(total_storage))
-
-        # Readjust the amount of contribution
-        update_network_contribution(miners, total_storage)
-
-        # Create the months miner snapshot
-        monthly_miner_snapshot.append(len(miners))
-
-    print("\n ----- Data Generation Done ----- \n\n")
+    # print("\n ----- Data Generation Done ----- \n\n")
 
     to_sender = gen_to_sender(
-        miners, configs, monthly_miner_snapshot, monthly_storage_snapshot
+        boxes, configs, monthly_miner_snapshot, monthly_storage_snapshot
     )
 
     return to_sender

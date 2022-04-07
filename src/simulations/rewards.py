@@ -205,7 +205,6 @@ def gen_to_sender(
     cloud_savings = configs["user_config"]["avg_monthly_storage_cost"] * 12
 
     current_token_value = configs["global_params"]["token_value"]
-    token_value_array = [current_token_value + (i * 0.01) for i in range(0, 12)]
 
     # An array to model the X-axis on a few graphs
     time_array = [i for i in range(1, 13)]
@@ -226,7 +225,9 @@ def gen_to_sender(
     sub_val = []
     tokens = 0
 
+    # print(len(miner.monthly_rewards))
     for i in range(len(miner.monthly_rewards)):
+
         amnt = miner.monthly_rewards[i]
 
         if len(monthly_sub_total) == 0:
@@ -327,10 +328,11 @@ def gen_results(configs: dict):
     monthly_storage_snapshot = []
 
     monthly_storage_snapshot.append(total_storage)
+
     # An array to track the amount of boxes per month (good chart)
     monthly_miner_snapshot = [amount_of_boxes]
 
-    for month in range(1, time + 1):
+    for month in range(1, time):
 
         # print("----- Month " + str(month) + " -----")
         update_monthly_rewards(boxes, monthly_tokens, total_storage)
@@ -344,6 +346,8 @@ def gen_results(configs: dict):
         update_network_contribution(boxes, total_storage)
         monthly_storage_snapshot.append(total_storage)
         monthly_miner_snapshot.append(len(boxes))
+
+    update_monthly_rewards(boxes, monthly_tokens, total_storage)
 
     # print("\n ----- Data Generation Done ----- \n\n")
 

@@ -41,8 +41,8 @@ def test_system_params() -> dict:
         },
         "box_config": {
             "rate_of_change": 0.1,
-            "storage_cap": 1200,
-            "storage_provided": 1.12,
+            "storage_cap": 1000,
+            "storage_provided": 1,
             "monthly_token_amount": 10e6,
         },
     }

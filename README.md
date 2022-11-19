@@ -1,4 +1,8 @@
+There is more comprehensive machinations simulations, which includes both mining and torage rewards: https://github.com/functionland/simulation/blob/2a33dc9a07f47a3ae2b337c42587f5fec19e6d9d/Simulation%20FULA%20-%20final%20version.mp4
+
 # Simulation
+
+This is Python simulation for mining part.
 
 ### Fula Blockchain Simulation
 

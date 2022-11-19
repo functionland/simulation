@@ -2,7 +2,7 @@ There is more comprehensive machinations simulations, which includes both mining
 
 # Simulation
 
-This is Python simulation for mining part.
+This is Python simulation for mining part. There is a oublished version for the Python version here: https://fx.land/simulation
 
 ### Fula Blockchain Simulation
 

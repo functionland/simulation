@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fula Network Mining Simulator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-gray-900">Fula Network Mining Simulator</h1>
+            <p class="mt-2 text-lg text-gray-600">Calculate your potential earnings from Fula Network mining</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Input Parameters Card -->
+            <div class="bg-white rounded-lg shadow-md p-6 col-span-1">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Simulation Parameters</h2>
+                <form id="simulationForm" class="space-y-4">
+                    <div>
+                        <label for="tokenValue" class="block text-sm font-medium text-gray-700">Anticipated Token Value ($): <span id="tokenValueDisplay">0.04</span></label>
+                        <input type="range" id="tokenValue" name="tokenValue" step="0.005" min="0" max="0.1" value="0.04" required
+                            class="mt-1 block w-full focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    
+                    <div>
+                        <label for="storageProvided" class="block text-sm font-medium text-gray-700">Provided Storage Capacity By The Blox Owner (TB)</label>
+                        <div class="flex space-x-4 mt-2">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="storageProvided" value="0" class="form-radio text-indigo-600">
+                                <span class="ml-2">0 TB</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="storageProvided" value="1" class="form-radio text-indigo-600" checked>
+                                <span class="ml-2">1 TB</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="storageProvided" value="2" class="form-radio text-indigo-600">
+                                <span class="ml-2">2 TB</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="increaseRate" class="block text-sm font-medium text-gray-700">Monthly increase in total network storage capacity (%): <span id="increaseRateDisplay">0</span></label>
+                        <input type="range" id="increaseRate" name="increaseRate" step="0.1" min="0" max="10" value="0" required
+                            class="mt-1 block w-full focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div>
+                        <label for="powerCost" class="block text-sm font-medium text-gray-700">Average Power Consumption Cost by Blox per month ($)</label>
+                        <input type="number" id="powerCost" name="powerCost" step="0.1" min="0" value="5" required
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div>
+                        <label for="networkStorage" class="block text-sm font-medium text-gray-700">Total Network Storage Capacity in the Beginning (TB): <span id="networkStorageDisplay">2000</span></label>
+                        <input type="range" id="networkStorage" name="networkStorage" step="100" min="0" max="5000" value="2000" required
+                            class="mt-1 block w-full focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div>
+                        <label for="cloudSavings" class="block text-sm font-medium text-gray-700">Average Monthly cloud storage savings ($)</label>
+                        <input type="number" id="cloudSavings" name="cloudSavings" step="0.1" min="0" value="30" required
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div>
+                        <label for="monthlyTokens" class="block text-sm font-medium text-gray-700">Monthly Token Distribution Amount (M)</label>
+                        <input type="number" id="monthlyTokens" name="monthlyTokens" step="1" min="1" value="10" required
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Calculate Earnings
+                    </button>
+                </form>
+            </div>
+
+            <!-- Summary Results Card -->
+            <div class="bg-white rounded-lg shadow-md p-6 md:col-span-2">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Earnings Summary</h2>
+                <div id="summaryResults" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-500">Yearly Token Reward</p>
+                        <p id="yearlyTokens" class="text-2xl font-bold text-indigo-600">-</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-500">Yearly Mined Value (USD)</p>
+                        <p id="yearlyUsdValue" class="text-2xl font-bold text-indigo-600">-</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-500">Yearly Power Cost (USD)</p>
+                        <p id="yearlyPowerCost" class="text-2xl font-bold text-red-600">-</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-500">Yearly Cloud Savings (USD)</p>
+                        <p id="yearlyCloudSavings" class="text-2xl font-bold text-green-600">-</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg col-span-1 md:col-span-2">
+                        <p class="text-sm text-gray-500">Net Yearly Profit (USD)</p>
+                        <p id="netProfit" class="text-2xl font-bold text-indigo-600">-</p>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">First Month Calculation Breakdown</h3>
+                    <div id="firstMonthBreakdown" class="bg-gray-50 p-4 rounded-lg space-y-2">
+                        <p class="text-sm"><span class="font-medium">Total mining reward tokens:</span> <span id="firstMonthTotalTokens">-</span></p>
+                        <p class="text-sm"><span class="font-medium">Miner's reward share:</span> <span id="firstMonthMinerShare">-</span></p>
+                        <p class="text-sm"><span class="font-medium">Miner's rewarded tokens:</span> <span id="firstMonthTokens">-</span></p>
+                        <p class="text-sm"><span class="font-medium">Miner's reward in $ value:</span> <span id="firstMonthValue">-</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Cumulative Tokens Earned</h3>
+                <div class="h-64">
+                    <canvas id="tokensChart"></canvas>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Cumulative Value Earned (USD)</h3>
+                <div class="h-64">
+                    <canvas id="valueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Results Table -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-medium text-gray-800 mb-4">Monthly Results</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Network Storage (TB)</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Miner Share (%)</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tokens Earned</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">USD Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyResultsTable" class="bg-white divide-y divide-gray-200">
+                        <!-- Monthly results will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-12 py-6 bg-gray-800 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm">Fula Network Mining Simulator | Based on Longtail Financial's Simulation Model</p>
+        </div>
+    </footer>
+
+    <script>
+        // Charts
+        let tokensChart = null;
+        let valueChart = null;
+
+        // Utility functions
+        function formatNumber(number, decimals = 2) {
+            return number.toLocaleString('en-US', { 
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals 
+            });
+        }
+
+        function formatCurrency(number, decimals = 2) {
+            return '$' + formatNumber(number, decimals);
+        }
+
+        function formatPercent(number, decimals = 4) {
+            return (number * 100).toLocaleString('en-US', { 
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals 
+            }) + '%';
+        }
+
+        // Simulation functions
+        function calcStoragePercentage(storage, totalStorage) {
+            return storage / totalStorage;
+        }
+
+        function tokenRewards(rewardPercent, monthlyTokens) {
+            return monthlyTokens * rewardPercent;
+        }
+
+        function simulateFullYear(params) {
+            const results = {
+                monthlyResults: [],
+                summary: {}
+            };
+            
+            let totalStorage = params.totalNetworkStorage;
+            let storageProvided = params.storageProvided;
+            const monthlyTokens = params.monthlyTokenAmount;
+            const rateOfChange = params.monthlyIncreaseRate / 100; // Convert from percentage
+            const tokenValue = params.tokenValue;
+            const powerCost = params.powerConsumptionCost;
+            const cloudSavings = params.cloudStorageSavings;
+            
+            let totalTokensEarned = 0;
+            
+            for (let month = 0; month < 12; month++) {
+                // Calculate rewards for this month
+                const minerShare = calcStoragePercentage(storageProvided, totalStorage);
+                const tokensRewarded = tokenRewards(minerShare, monthlyTokens);
+                const usdValue = tokensRewarded * tokenValue;
+                
+                totalTokensEarned += tokensRewarded;
+                
+                // Store monthly results
+                results.monthlyResults.push({
+                    month: month + 1,
+                    totalNetworkStorage: totalStorage,
+                    minerShare: minerShare,
+                    tokensRewarded: tokensRewarded,
+                    usdValue: usdValue
+                });
+                
+                // Increase network storage for next month
+                totalStorage += totalStorage * rateOfChange;
+            }
+            
+            // Calculate yearly summary
+            const yearlyTokenReward = totalTokensEarned;
+            const yearlyUsdValue = yearlyTokenReward * tokenValue;
+            const yearlyPowerCost = powerCost * 12;
+            const yearlyCloudSavings = cloudSavings * 12;
+            const netProfit = yearlyUsdValue - yearlyPowerCost + yearlyCloudSavings;
+            
+            results.summary = {
+                yearlyTokenReward,
+                yearlyUsdValue,
+                yearlyPowerCost,
+                yearlyCloudSavings,
+                netProfit,
+                avgDailyTokenReward: yearlyTokenReward / 365
+            };
+            
+            return results;
+        }
+
+        // UI update functions
+        function updateSummaryResults(results) {
+            document.getElementById('yearlyTokens').textContent = formatNumber(results.summary.yearlyTokenReward);
+            document.getElementById('yearlyUsdValue').textContent = formatCurrency(results.summary.yearlyUsdValue);
+            document.getElementById('yearlyPowerCost').textContent = formatCurrency(results.summary.yearlyPowerCost);
+            document.getElementById('yearlyCloudSavings').textContent = formatCurrency(results.summary.yearlyCloudSavings);
+            document.getElementById('netProfit').textContent = formatCurrency(results.summary.netProfit);
+        }
+
+        function updateFirstMonthBreakdown(results, params) {
+            const firstMonth = results.monthlyResults[0];
+            document.getElementById('firstMonthTotalTokens').textContent = formatNumber(params.monthlyTokenAmount);
+            document.getElementById('firstMonthMinerShare').textContent = `${params.storageProvided}/${params.totalNetworkStorage} = ${formatPercent(firstMonth.minerShare)}`;
+            document.getElementById('firstMonthTokens').textContent = formatNumber(firstMonth.tokensRewarded);
+            document.getElementById('firstMonthValue').textContent = formatCurrency(firstMonth.usdValue);
+        }
+
+        function updateMonthlyResultsTable(results) {
+            const tbody = document.getElementById('monthlyResultsTable');
+            tbody.innerHTML = '';
+            
+            results.monthlyResults.forEach(month => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${month.month}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatNumber(month.totalNetworkStorage, 2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatPercent(month.minerShare)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatNumber(month.tokensRewarded, 2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(month.usdValue, 2)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateCharts(results) {
+            const months = results.monthlyResults.map(m => `Month ${m.month}`);
+            
+            // Calculate cumulative values
+            let cumulativeTokens = [];
+            let cumulativeValues = [];
+            let runningTokenSum = 0;
+            let runningValueSum = 0;
+            
+            results.monthlyResults.forEach(month => {
+                runningTokenSum += month.tokensRewarded;
+                runningValueSum += month.usdValue;
+                cumulativeTokens.push(runningTokenSum);
+                cumulativeValues.push(runningValueSum);
+            });
+            
+            // Tokens chart
+            if (tokensChart) {
+                tokensChart.destroy();
+            }
+            
+            const tokensCtx = document.getElementById('tokensChart').getContext('2d');
+            tokensChart = new Chart(tokensCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Cumulative Tokens Earned',
+                        data: cumulativeTokens,
+                        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 2,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Value chart
+            if (valueChart) {
+                valueChart.destroy();
+            }
+            
+            const valueCtx = document.getElementById('valueChart').getContext('2d');
+            valueChart = new Chart(valueCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Cumulative USD Value',
+                        data: cumulativeValues,
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 2,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return formatCurrency(context.raw);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to run simulation and update UI
+        function runSimulation() {
+            // Get storage provided from radio buttons
+            const storageRadios = document.getElementsByName('storageProvided');
+            let storageProvided = 1; // Default
+            
+            for (let i = 0; i < storageRadios.length; i++) {
+                if (storageRadios[i].checked) {
+                    storageProvided = parseFloat(storageRadios[i].value);
+                    break;
+                }
+            }
+            
+            // Get form values
+            const params = {
+                tokenValue: parseFloat(document.getElementById('tokenValue').value),
+                storageProvided: storageProvided,
+                totalNetworkStorage: parseFloat(document.getElementById('networkStorage').value),
+                monthlyIncreaseRate: parseFloat(document.getElementById('increaseRate').value),
+                monthlyTokenAmount: parseFloat(document.getElementById('monthlyTokens').value) * 1000000, // Convert M to actual value
+                powerConsumptionCost: parseFloat(document.getElementById('powerCost').value),
+                cloudStorageSavings: parseFloat(document.getElementById('cloudSavings').value)
+            };
+            
+            console.log("Simulation parameters:", params);
+            
+            // Run simulation
+            const results = simulateFullYear(params);
+            
+            // Update UI
+            updateSummaryResults(results);
+            updateFirstMonthBreakdown(results, params);
+            updateMonthlyResultsTable(results);
+            updateCharts(results);
+        }
+        
+        // Form submission handler
+        document.getElementById('simulationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            runSimulation();
+        });
+        
+        // Add event listeners for sliders to update display values and auto-run simulation
+        document.getElementById('tokenValue').addEventListener('input', function() {
+            document.getElementById('tokenValueDisplay').textContent = this.value;
+            runSimulation();
+        });
+        
+        document.getElementById('increaseRate').addEventListener('input', function() {
+            document.getElementById('increaseRateDisplay').textContent = this.value;
+            runSimulation();
+        });
+        
+        document.getElementById('networkStorage').addEventListener('input', function() {
+            document.getElementById('networkStorageDisplay').textContent = this.value;
+            runSimulation();
+        });
+        
+        // Add event listeners for other inputs to auto-run simulation
+        document.getElementById('powerCost').addEventListener('input', runSimulation);
+        document.getElementById('cloudSavings').addEventListener('input', runSimulation);
+        document.getElementById('monthlyTokens').addEventListener('input', runSimulation);
+        
+        // Add event listeners for storage radio buttons
+        const storageRadios = document.getElementsByName('storageProvided');
+        for (let i = 0; i < storageRadios.length; i++) {
+            storageRadios[i].addEventListener('change', runSimulation);
+        }
+
+        // Initialize with default values on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            runSimulation();
+        });
+    </script>
+</body>
+</html>
